@@ -1,5 +1,5 @@
-COMPONENTS = Stack.class ThreadID.class Profiler.class Pool.class LockFreeStack.class Partial.class SimplePartial.class AdvancedPartial.class	\
-Sudoku.class ConcurrentSudoku.class
+COMPONENTS = ConcurrentSudoku.class Partial.class SimplePartial.class AdvancedPartial.class	\
+Sudoku.class
 
 all: $(COMPONENTS)
 

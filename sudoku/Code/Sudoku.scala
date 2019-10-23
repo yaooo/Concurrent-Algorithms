@@ -8,6 +8,8 @@
   * # -a: use the AdvancedPartial
   */
 
+import ox.cads.util.Profiler
+
 object Sudoku{
   /** Solve the puzzle defined by init */
   def solve(init: Partial){

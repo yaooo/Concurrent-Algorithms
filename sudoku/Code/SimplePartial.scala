@@ -1,3 +1,5 @@
+import ox.cads.util.Profiler
+
 // A simple implementation of partial solutions
 class SimplePartial extends Partial{
   protected val contents = Array.ofDim[Int](9,9)
