@@ -9,6 +9,28 @@
   */
 import ox.cads.util.Profiler
 import java.util.concurrent.atomic.AtomicBoolean
+import ox.cads.collection.TerminationDetectingPool
+import ox.cads.collection.Pool
+import scala.collection.mutable.ArrayBuffer
+
+class StackPool[T] extends Pool[T]{
+  private var stack = new ox.cads.collection.LockFreeStack[T]
+
+  /** put x into the pool */
+    def add(x: T) : Unit = {
+      stack.push(x);
+      // Profiler.count("Push")
+    }
+
+    /** Get a value from the pool.
+    * @return Some(x) where x is the value obtained, or None if the pool is
+    * empty. */
+  def get : Option[T] = {
+    stack.pop
+  }
+}
+
+
 
 object ConcurrentSudoku {
 
@@ -40,7 +62,6 @@ object ConcurrentSudoku {
     // Stack to store partial solutions that we might back-track to.
     val stack = new ox.cads.collection.LockFreeStack[Partial]
     val done = new AtomicBoolean(false)
-    var partial = None
     stack.push(init)
 
     def solver(){
@@ -64,6 +85,100 @@ object ConcurrentSudoku {
       }
     }
     ox.cads.util.ThreadUtil.runSystem(par, solver)
+  }
+
+
+  /** question 2 **/
+  def solve2(init: Partial, par: Int) {
+    // Stack to store partial solutions that we might back-track to.
+    val pool = new TerminationDetectingPool[Partial](
+      new StackPool[Partial],
+      par
+    )
+    val done = new AtomicBoolean(false)
+
+    // Stack to store partial solutions that we might back-track to.
+    pool.add(init)
+
+    def solver() {
+      while (!done.get) {
+        // pool.get will spin until pool is not empty or some thread invoke signalDone.
+        pool.get match {
+          // Return immediate upon one unsuccessful get.
+          case None => { return }
+          case Some(partial) => {
+            val complete = partial.complete
+            if (complete && done.compareAndSet(false, true)) {
+              pool.signalDone
+              partial.printPartial;
+            } else if (!complete) {
+              // Choose position to play
+              val (i, j) = partial.nextPos;
+              // Consider all values to play there
+              for (d <- 1 to 9)
+                if (partial.canPlay(i, j, d)) {
+                  val p1 = partial.play(i, j, d)
+                  pool.add(p1)
+                }
+            }
+          }
+        }
+      }
+    }
+    ox.cads.util.ThreadUtil.runSystem(par, solver)
+  }
+
+
+  /** question 3 **/
+  // To optimize the stack, we try not to have so many workers at the same time because they might just block each other.
+  // We reduced the number of workers that are needed in order to fully use the resources 
+  // "Amdahl's law"
+  def solve3(init: Partial, par: Int) {
+    // Stack to store partial solutions that we might back-track to.
+    var num = par
+    val cores = Runtime.getRuntime().availableProcessors();
+    if(cores < par)
+      num = cores/3*2
+    println("Number of threads:" + num)
+    // if(par > cores){
+    //   par = cores
+    // }
+
+    val pool = new TerminationDetectingPool[Partial](
+      new StackPool[Partial],
+      num
+    )
+    val done = new AtomicBoolean(false)
+
+    // Stack to store partial solutions that we might back-track to.
+    pool.add(init)
+
+    def solver() {
+      while (!done.get) {
+        // pool.get will spin until pool is not empty or some thread invoke signalDone.
+        pool.get match {
+          // Return immediate upon one unsuccessful get.
+          case None => { return }
+          case Some(partial) => {
+            val complete = partial.complete
+            if (complete && done.compareAndSet(false, true)) {
+              pool.signalDone
+              partial.printPartial;
+            } else if (!complete) {
+              // Choose position to play
+              val (i, j) = partial.nextPos;
+              // Consider all values to play there
+              for (d <- 1 to 9)
+                if (partial.canPlay(i, j, d)) {
+                  val p1 = partial.play(i, j, d)
+                  pool.add(p1)
+                }
+            }
+          }
+        }
+      }
+    }
+    ox.cads.util.ThreadUtil.runSystem(num, solver)
   }
 
 
@@ -93,7 +208,7 @@ object ConcurrentSudoku {
     var section = 0 // the section of the problem, ex: 1,2,3
     var count = 1 // number of tests
     var fname = "" // filename
-    var adv = false // are we using the AdvancedPartial?
+    var adv = true // are we using the AdvancedPartial?
     var all = false // are we doing all files in allFiles?
     var allPoss = false // are we doing all files in allPossibleFiles?
     // parse command line arguments
@@ -126,6 +241,18 @@ object ConcurrentSudoku {
 
     // Solve count times
     section match {
+      case 3 => {
+        for (i <- 0 until count)
+          if (all) for (f <- allFiles) { println(f); solve3(mkPartial(f), par) } else if (allPoss)
+            for (f <- allPossibleFiles) { println(f); solve3(mkPartial(f), par) } else
+            solve3(mkPartial(fname), par)
+      }
+      case 2 => {
+        for (i <- 0 until count)
+          if (all) for (f <- allFiles) { println(f); solve2(mkPartial(f), par) } else if (allPoss)
+            for (f <- allPossibleFiles) { println(f); solve2(mkPartial(f), par) } else
+            solve2(mkPartial(fname), par)
+      }
       case 1 => {
         for (i <- 0 until count)
           if (all) for (f <- allFiles) { println(f); solve1(mkPartial(f), par) } else if (allPoss)
