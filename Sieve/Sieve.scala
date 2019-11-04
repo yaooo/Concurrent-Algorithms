@@ -30,19 +30,23 @@ object Sieve {
         println(primes(N - 1))
     }
 
+
+// find a place to inset, not care about overwrite
   def insertPrime(primes: AtomicIntegerArray, prime: Int, start: Int): Boolean = {
     var i = start
     var p = prime
 
     while (p != 0) {
       var cur = primes.get(i)
+      // find the index to insert
       while (cur > 0 && cur < p) {
         i += 1
         if (i >= primes.length) return false
         cur = primes.get(i)
       }
-      // find the position to insert the number
 
+      // replace the number previously stored in the Array
+      // store p = cur, and find the next position to insert the replaced value
       if (primes.compareAndSet(i, cur, p)) {
         p = cur 
       } 
@@ -78,8 +82,7 @@ object Sieve {
                 var isPrime = true 
                 var i = 0; var p = primes.get(i)
                 while (isPrime && p > 0 && i < primes.length-1 && p * p <= cur_number) {
-                  if (cur_number % p == 0)
-                    isPrime = false
+                  isPrime &= !(cur_number % p == 0)
                   i += 1
                   p = primes.get(i)
                 }
