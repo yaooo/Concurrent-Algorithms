@@ -123,8 +123,8 @@ object Sieve {
                 var isPrime = true 
                 var i = 0; var p = primes.get(i)
                 while (isPrime && p > 0 && i < primes.length-1 && p * p <= cur_number) {
-                  if (cur_number % p == 0)
-                    isPrime = false
+                  isPrime &= !(cur_number % p == 0)
+                    // isPrime = false
                   i += 1
                   p = primes.get(i)
                 }
