@@ -77,7 +77,49 @@ object Sieve {
 
                 var isPrime = true 
                 var i = 0; var p = primes.get(i)
-                while (isPrime && p > 0 && i < primes.length-1 && p <= Math.sqrt(cur_number)) {
+                while (isPrime && p > 0 && i < primes.length-1 && p * p <= cur_number) {
+                  if (cur_number % p == 0)
+                    isPrime = false
+                  i += 1
+                  p = primes.get(i)
+                }
+
+                if (isPrime && insertPrime(primes, cur_number, start)) {
+                   nextSlot.getAndIncrement
+                }
+            }
+        }
+
+        ox.cads.util.ThreadUtil.runIndexedSystem(par, solve)
+        println(primes.get(N - 1))
+    }
+
+
+    def concurrent_cache(N: Int, par: Int) = {
+        val primes = new AtomicIntegerArray(N)
+        primes.set(0, 2)
+        val current = new Array[Int](par)   //current ids for the threads
+        val next = new AtomicInteger(3) //next long to be tested
+        var nextSlot = new AtomicInteger(1) // index of the next prime that should be inserted
+
+        def solve(id: Int):Unit ={
+            while(primes.get(N-1) == 0){
+                var cur_number = next.getAndIncrement()
+                var start = nextSlot.get()
+
+                current(id) = cur_number
+
+                // spining lock, spin if "(m ^ 2 <= n)" (overflow??)
+                var valid = false
+                while(!valid){
+                    valid = true
+                    for(i <- 0 until par)
+                        valid = valid & !(current(i) <= Math.sqrt(cur_number))
+                }
+
+                var isPrime = true 
+                var i = 0; var p = primes.get(i)
+                while (isPrime && p > 0 && i < primes.length-1 && p * p <= cur_number) {
                   if (cur_number % p == 0)
                     isPrime = false
                   i += 1
