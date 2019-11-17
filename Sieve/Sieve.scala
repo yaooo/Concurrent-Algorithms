@@ -32,11 +32,12 @@
 
 // scala Sieve 10000000
 // 179424673
-// Time taken(sequential): 35583
+// Time taken(sequential): 35337
 // 179424673
-// Time taken(concurrent): 22669
+// Time taken(concurrent): 33412
 // 179424673
-// Time taken(concurrent-cached): 23616
+// Time taken(concurrent-cached): 23412
+
 
 import java.util.concurrent.atomic.AtomicIntegerArray
 import java.util.concurrent.atomic.AtomicInteger
@@ -144,9 +145,9 @@ object Sieve {
         var nextSlot = new AtomicInteger(1) // index of the next prime that should be inserted
 
         // local cache used to store non-zero numbers from the array primes
-        val localPrimes = new Array[Int](N)
-        localPrimes(0) = 2
-        var localPrimesIndex = 1
+        val localPrimes = Array.ofDim[Int](par, N)
+        // localPrimes(0) = 2
+        var localPrimesIndex = new Array[Int](par)
 
         def solve(id: Int):Unit ={
 
@@ -166,17 +167,17 @@ object Sieve {
 
                 var isPrime = true
 
-                while(localPrimesIndex < primes.length && primes.get(localPrimesIndex) != 0){
-                    localPrimes(localPrimesIndex) = primes.get(localPrimesIndex)
-                    localPrimesIndex += 1
+                while(localPrimesIndex(id) < primes.length && primes.get(localPrimesIndex(id)) != 0 && localPrimesIndex(id) <= Math.sqrt(cur_number)){
+                    localPrimes(id)(localPrimesIndex(id)) = primes.get(localPrimesIndex(id))
+                    localPrimesIndex(id) += 1
                 }
 
-                var i = 0; var p = localPrimes(i)
-                while (isPrime && p > 0 && i < localPrimes.length-1 && p * p <= cur_number) {
+                var i = 0; var p = localPrimes(id)(i)
+                while (isPrime && p > 0 && i < localPrimes(id).length-1 && p * p <= cur_number) {
                   isPrime &= !(cur_number % p == 0)
                     // isPrime = false
                   i += 1
-                  p = localPrimes(i)
+                  p = localPrimes(id)(i)
                 }
 
                 if (isPrime && insertPrime(primes, cur_number, start)) {
