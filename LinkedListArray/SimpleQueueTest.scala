@@ -8,8 +8,8 @@ import ox.cads.testing._
 /** Object to perform linearizability testing on a queue. */
 object SimpleQueueTest{
   var iters = 200  // Number of iterations by each worker
-  val MaxVal = 20 // Maximum value placed in the queue
-  var enqueueProb = 0.3 // probability of doing an enqueue
+  val MaxVal = 10 // Maximum value placed in the queue
+  var enqueueProb = 0.4 // probability of doing an enqueue
   var queueType = "unbounded" // which queue type are we using?
 
 
@@ -80,7 +80,7 @@ object SimpleQueueTest{
     println("\nSimple LinkedArrayList ====> time taken: "+(t1-t0)/1000000+"ms")
   
 
-    // Now run the tests
+    // // Now run the tests
     val tt0 = java.lang.System.nanoTime
     var rr = 0
     var rresult = 1

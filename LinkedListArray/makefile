@@ -1,4 +1,4 @@
-COMPONENTS = LinkedArrayList.class SimpleQueueTest.class LockFreeLinkedArrayList.class
+COMPONENTS = LinkedArrayList.class LockFreeLinkedArrayList.class SimpleQueueTest.class
 
 all: $(COMPONENTS)
 

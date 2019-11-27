@@ -1,0 +1,3 @@
+Make file: make
+remove class: make clean
+run code: scala SimpleQueueTest
