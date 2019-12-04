@@ -5,14 +5,17 @@ import ox.cads.atomic._
 // Lock free stack with a garbage collector
 // Create pool with size p (a array of Node), where each thread can access pool[ThreadID % p]
 
-// Create a garbage colllector: 
-    // When pop: insert the popped node to the collector
-    // When push: recover a node from the garbage collector or create a new nodes(if empty)
-
 // A solution to the ABA problem is to pair the reference with a counter, also known as "stamp"
 // Each time a thread changes a reference, it also increments the stamp.
 // This avoids the ABA problem because the stamp will changed (same case applies to the recycled nodes),
 // and so the CAS will fail.
+
+// abstraction function:
+// Have the top as the AtomicPair, keep reference on the top node in order to pop and push.
+
+// Create a garbage colllector: 
+    // When pop: insert the popped node to the collector
+    // When push: recover a node from the garbage collector or create a new nodes(if empty)
 
 
 /** A lock-free stack.  Based on Herlihy & Shavit, Section 11.2 */
@@ -56,9 +59,9 @@ class LockFreeStack[T](p: Int) extends TotalStack[T]{
     do{
       val (oldTop, tStamp) = top.get
       
-      nextTop.nextStamp.set(oldTop, tStamp + 1)
+      nextTop.nextStamp.set(oldTop, tStamp)
       // try to add node to the stack
-      done = top.compareAndSet((oldTop, tStamp), (nextTop, tStamp + 1))
+      done = top.compareAndSet((oldTop, tStamp), (nextTop, tStamp))
       if(!done) pause // back off
     } while(!done)
   }
@@ -68,11 +71,12 @@ class LockFreeStack[T](p: Int) extends TotalStack[T]{
     var result : Option[T] = None; var done = false
     do {
       val (oldTop, tStamp) = top.get
+      // linearization point
       if (oldTop == null) done = true // empty stack; return None
       else {
         val newTop = oldTop.next
 
-        // try to remove oldTop from list
+        // try to remove oldTop from list (linearization point)
         if(top.compareAndSet((oldTop, tStamp), (newTop, tStamp+1))) {
           result = Some(oldTop.value)
           done = true
