@@ -1,4 +1,4 @@
-COMPONENTS = Deque.class ListDeque.class
+COMPONENTS = Deque.class ListDeque.class LockFreeDeque.class Test.class 
 
 all: $(COMPONENTS)
 

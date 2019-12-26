@@ -3,6 +3,8 @@ import java.util.concurrent.locks.ReentrantLock
 import ox.cads.locks.Lock
 import java.util.concurrent.atomic.AtomicInteger
 
+
+// save a copy of a partially working code
 class ListDeque[T: ClassTag] extends Deque[T]{
 	class Node(val value: T){
     	@volatile var prev: Node = null
@@ -17,8 +19,10 @@ class ListDeque[T: ClassTag] extends Deque[T]{
 
 	// Head and tail of the list
 
-  	private var head : Node = null
-  	private var tail : Node = null
+  	private val tail = new Node(null.asInstanceOf[T])
+  	private val head = new Node(null.asInstanceOf[T])
+  	head.next = tail
+  	tail.prev = head
 	
 	private var count = 0
 	private var threashold = 50
@@ -28,6 +32,20 @@ class ListDeque[T: ClassTag] extends Deque[T]{
 	private val notFull = lock.newCondition // used to wait until not full
   	private val notEmpty = lock.newCondition // used to wait until not empty
   	// private val size = new AtomicInteger(0) // current # elements
+
+
+
+  	private def find : (Node, Node) = {
+	    // optimistically search for item
+	    var pred = head; var curr = head.next
+	    while(curr.key < key || curr.key == key & curr.item != item){
+	      pred = curr; curr = curr.next
+	    }
+	    // lock then validate
+	    pred.lock; curr.lock
+	    if(validate(pred, curr)) return (pred, curr)
+	    else{ pred.unlock; curr.unlock; find(item, key) } // try again
+	} 
 
 
 	def addFirst(x: T): Unit = {		
